@@ -38,6 +38,11 @@ const (
 	text_link_end
 	text_link_url_start
 	text_link_url_end
+	text_image_1
+	text_image_start
+	text_image_end
+	text_image_url_start
+	text_image_url_end
 	text_br
 )
 
@@ -164,6 +169,9 @@ func (o *impl) Compile(src string) (string, error) {
 			} else if char == '[' {
 				state = text_link_start
 				linkText = make([]byte, 0)
+			} else if char == '!' {
+				state = text_image_1
+				linkText = make([]byte, 0)
 			} else if char == '<' {
 				out = appendStr(out, "&lt;")
 			} else if char == '>' {
@@ -188,6 +196,34 @@ func (o *impl) Compile(src string) (string, error) {
 			if char == ')' {
 				state = text
 				out = appendStr(out, fmt.Sprintf("<a href=\"%s\">%s</a>", string(urlText), string(linkText)))
+			} else {
+				urlText = append(urlText, char)
+			}
+		case text_image_1:
+			if char == '[' {
+				state = text_image_start
+			} else {
+				out = appendStr(out, "!")
+				index--
+				state = text
+			}
+		case text_image_start:
+			if char == ']' {
+				state = text_image_end
+			} else {
+				linkText = append(linkText, char)
+			}
+		case text_image_end:
+			if char == '(' {
+				state = text_image_url_start
+				urlText = make([]byte, 0)
+			} else {
+				return "", errors.New(fmt.Sprintf("expected is ( but %s at %d", char, index))
+			}
+		case text_image_url_start:
+			if char == ')' {
+				state = text
+				out = appendStr(out, fmt.Sprintf("<img src=\"%s\" title=\"%s\"/>", string(urlText), string(linkText)))
 			} else {
 				urlText = append(urlText, char)
 			}

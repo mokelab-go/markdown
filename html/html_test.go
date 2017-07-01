@@ -80,7 +80,7 @@ Androidのアカウント管理の仕組みを使おう
 `
 
 func Test_OK(t *testing.T) {
-	src := "# OK\n\nThis is sample text"
+	src := "# OK\n\nThis is sample text\n\n![img](./image.webp)"
 	m := NewMarkdown()
 	out, err := m.Compile(src)
 	if err != nil {
