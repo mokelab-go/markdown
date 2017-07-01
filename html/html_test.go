@@ -1,14 +1,18 @@
 package html
 
 import (
+	"fmt"
 	"testing"
 )
 
-const markdown_1 = `
-# OK
-
-Hey
-`
+const markdown_1 = "# OK\n\n" +
+	"```\n" +
+	"# TOMLの例\n" +
+	"[DB]\n" +
+	"user = \"fkm\"\n" +
+	"pass = \"moke\"\n" +
+	"db = \"tech\"\n" +
+	"```\n"
 
 const markdown_2 = `
 ## 起動モード
@@ -83,7 +87,7 @@ func Test_OK(t *testing.T) {
 		t.Errorf("error : %s", err)
 		return
 	}
-	t.Errorf(out)
+	fmt.Printf(out)
 }
 
 func Test_1(t *testing.T) {
@@ -93,7 +97,7 @@ func Test_1(t *testing.T) {
 		t.Errorf("error : %s", err)
 		return
 	}
-	t.Errorf(out)
+	fmt.Printf(out)
 }
 
 func Test_2(t *testing.T) {
@@ -103,7 +107,7 @@ func Test_2(t *testing.T) {
 		t.Errorf("error : %s", err)
 		return
 	}
-	t.Errorf(out)
+	fmt.Printf(out)
 }
 
 func Test_3(t *testing.T) {
@@ -113,5 +117,5 @@ func Test_3(t *testing.T) {
 		t.Errorf("error : %s", err)
 		return
 	}
-	t.Errorf(out)
+	fmt.Printf(out)
 }
