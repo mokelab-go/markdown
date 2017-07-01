@@ -1,7 +1,7 @@
 package markdown
 
-// Markdown provides markdown to other API
+// Markdown provides API to convert markdown to other language
 type Markdown interface {
-	// ToHTML compiles markdown to html
-	ToHTML(src string) (string, error)
+	// Compile markdown to other language
+	Compile(src string) (string, error)
 }
