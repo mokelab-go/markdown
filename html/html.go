@@ -197,6 +197,7 @@ func (o *impl) Compile(src string) (string, error) {
 				out = addBlockEnd(out, block)
 				block = block_none
 			} else {
+				state = text
 				out = append(out, ' ')
 				out = append(out, char)
 			}
