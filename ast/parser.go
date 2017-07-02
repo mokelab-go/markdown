@@ -40,6 +40,8 @@ const (
 	text_image_start
 	text_image_end
 	text_image_url_start
+	text_image_url_attr_key
+	text_image_url_attr_value
 	text_image_url_end
 	text_br
 )
@@ -49,6 +51,9 @@ func Parse(src string) (*Block, error) {
 	var textValue []byte
 	var linkText []byte
 	var urlText []byte
+	var attrKey []byte
+	var attrValue []byte
+	var attrs map[string]string
 	state := state_none
 	block := block_none
 	index := 0
@@ -56,8 +61,7 @@ func Parse(src string) (*Block, error) {
 	root := newBlock(TypeRoot)
 	currentBlock := root
 	blockStack := make([]*Block, 0)
-	_ = currentBlock
-	_ = blockStack
+
 	for index < srcLen {
 		char := src[index]
 		switch state {
@@ -286,8 +290,39 @@ func Parse(src string) (*Block, error) {
 				appendChild(currentBlock, imageBlock)
 
 				out = appendStr(out, fmt.Sprintf("<img src=\"%s\" title=\"%s\"/>", string(urlText), string(linkText)))
+			} else if char == ' ' {
+				state = text_image_url_attr_key
+				attrKey = make([]byte, 0)
+				attrs = make(map[string]string)
 			} else {
 				urlText = append(urlText, char)
+			}
+		case text_image_url_attr_key:
+			if char == '=' {
+				state = text_image_url_attr_value
+				attrValue = make([]byte, 0)
+			} else {
+				attrKey = append(attrKey, char)
+			}
+		case text_image_url_attr_value:
+			if char == ' ' {
+				state = text_image_url_attr_key
+				attrs[string(attrKey)] = string(attrValue)
+				attrKey = make([]byte, 0)
+			} else if char == ')' {
+				attrs[string(attrKey)] = string(attrValue)
+				state = text
+				textBlock := newBlock(TypeText)
+				textBlock.Value = string(textValue)
+				textValue = make([]byte, 0)
+				appendChild(currentBlock, textBlock)
+				imageBlock := newBlock(TypeImage)
+				imageBlock.URL = string(urlText)
+				imageBlock.Value = string(linkText)
+				imageBlock.Attributes = attrs
+				appendChild(currentBlock, imageBlock)
+			} else {
+				attrValue = append(attrValue, char)
 			}
 		case text_br:
 			if char == '\n' {

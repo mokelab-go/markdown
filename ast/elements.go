@@ -16,16 +16,18 @@ const (
 )
 
 type Block struct {
-	Type     BlockType
-	URL      string
-	Value    string
-	Children []*Block
+	Type       BlockType
+	URL        string
+	Value      string
+	Children   []*Block
+	Attributes map[string]string
 }
 
 func newBlock(t BlockType) *Block {
 	return &Block{
-		Type:     t,
-		Value:    "",
-		Children: make([]*Block, 0),
+		Type:       t,
+		Value:      "",
+		Children:   make([]*Block, 0),
+		Attributes: make(map[string]string),
 	}
 }

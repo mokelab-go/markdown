@@ -5,7 +5,7 @@ import "testing"
 const src_1 = `
 # Hello
 
-World![image](./a.webp)
+World![image](./a.webp width=100 height=200)
 `
 
 const src_2 = `
@@ -31,65 +31,6 @@ const src_4 = "Hey\n\n" +
 	"}\n" +
 	"```\n"
 
-func checkTextBlock(t *testing.T, b *Block, value string) {
-	if b.Type != TypeText {
-		t.Errorf("Type must be text but %d", b.Type)
-		return
-	}
-	if b.Value != value {
-		t.Errorf("Value must be %s but %s", value, b.Value)
-		return
-	}
-}
-
-func checkAnchorBlock(t *testing.T, b *Block, text, url string) {
-	if b.Type != TypeAnchor {
-		t.Errorf("Type must be text but %d", b.Type)
-		return
-	}
-	if b.Value != text {
-		t.Errorf("Anchor text must be %s but %s", text, b.Value)
-		return
-	}
-	if b.URL != url {
-		t.Errorf("Anchor URL must be %s but %s", url, b.URL)
-		return
-	}
-}
-
-func checkImageBlock(t *testing.T, b *Block, text, url string) {
-	if b.Type != TypeImage {
-		t.Errorf("Type must be text but %d", b.Type)
-		return
-	}
-	if b.Value != text {
-		t.Errorf("Image title must be %s but %s", text, b.Value)
-		return
-	}
-	if b.URL != url {
-		t.Errorf("Image URL must be %s but %s", url, b.URL)
-		return
-	}
-}
-
-func checkChildrenCount(t *testing.T, b *Block, value int) {
-	if len(b.Children) != value {
-		t.Errorf("Children must have %d but %d", value, len(b.Children))
-		return
-	}
-}
-
-func checkBlock(t *testing.T, b *Block, tp BlockType, count int) {
-	if b.Type != tp {
-		t.Errorf("type must be %d but %d", tp, b.Type)
-		return
-	}
-	if len(b.Children) != count {
-		t.Errorf("children count must be %d but %d", count, len(b.Children))
-		return
-	}
-}
-
 func Test_1(t *testing.T) {
 	out, err := Parse(src_1)
 	if err != nil {
@@ -113,6 +54,28 @@ func Test_1(t *testing.T) {
 	checkTextBlock(t, textChild, "World")
 	textChild = text.Children[1]
 	checkImageBlock(t, textChild, "image", "./a.webp")
+	if len(textChild.Attributes) != 2 {
+		t.Errorf("Attributes must have 2 but %d", len(textChild.Attributes))
+		return
+	}
+	v, ok := textChild.Attributes["width"]
+	if !ok {
+		t.Errorf("Attributes must have width")
+		return
+	}
+	if v != "100" {
+		t.Errorf("Width must be 100 but %s", v)
+		return
+	}
+	v, ok = textChild.Attributes["height"]
+	if !ok {
+		t.Errorf("Attributes must have height")
+		return
+	}
+	if v != "200" {
+		t.Errorf("height must be 200 but %s", v)
+		return
+	}
 	textChild = text.Children[2]
 	checkTextBlock(t, textChild, "")
 }
