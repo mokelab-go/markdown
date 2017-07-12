@@ -99,14 +99,35 @@ func Parse(src string) (*Block, error) {
 			if char == '`' {
 				state = read_bq_2
 			} else {
+				pBlock := newBlock(TypeP)
+				textBlock := newBlock(TypeText)
+				pBlock.Children = append(pBlock.Children, textBlock)
+				currentBlock.Children = append(currentBlock.Children, pBlock)
+				blockStack = append(blockStack, currentBlock)
+				blockStack = append(blockStack, pBlock)
+				currentBlock = textBlock
+
 				state = text
+				block = p
+				textValue = make([]byte, 0)
 				index--
 			}
 		case read_bq_2:
 			if char == '`' {
 				state = read_bq_3
 			} else {
+				pBlock := newBlock(TypeP)
+				textBlock := newBlock(TypeText)
+				pBlock.Children = append(pBlock.Children, textBlock)
+				currentBlock.Children = append(currentBlock.Children, pBlock)
+				blockStack = append(blockStack, currentBlock)
+				blockStack = append(blockStack, pBlock)
+				currentBlock = textBlock
+
 				state = text
+				block = p
+				textValue = make([]byte, 0)
+				textValue = appendStr(textValue, "``")
 				out = appendStr(out, "``")
 				index--
 			}
@@ -125,7 +146,19 @@ func Parse(src string) (*Block, error) {
 				out = appendStr(out, "<pre><code>")
 			} else {
 				// TODO : check lang
+				pBlock := newBlock(TypeP)
+				textBlock := newBlock(TypeText)
+				pBlock.Children = append(pBlock.Children, textBlock)
+				currentBlock.Children = append(currentBlock.Children, pBlock)
+				blockStack = append(blockStack, currentBlock)
+				blockStack = append(blockStack, pBlock)
+				currentBlock = textBlock
+
 				state = text
+				block = p
+				textValue = make([]byte, 0)
+				textValue = appendStr(textValue, "```")
+
 				out = appendStr(out, "```")
 				index--
 			}
@@ -335,6 +368,8 @@ func Parse(src string) (*Block, error) {
 				block = block_none
 			} else {
 				state = text
+				textValue = append(textValue, ' ')
+				textValue = append(textValue, char)
 				out = append(out, ' ')
 				out = append(out, char)
 			}

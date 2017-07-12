@@ -31,6 +31,13 @@ const src_4 = "Hey\n\n" +
 	"}\n" +
 	"```\n"
 
+const src_5 = "Hey\n\n" +
+	"```java\n" +
+	"package main\n\n" +
+	"func main() {\n" +
+	"}\n" +
+	"```\n"
+
 func Test_1(t *testing.T) {
 	out, err := Parse(src_1)
 	if err != nil {
@@ -158,5 +165,31 @@ func Test_4(t *testing.T) {
 	checkBlock(t, child, TypePreCode, 1)
 	child = child.Children[0]
 	checkTextBlock(t, child, "package main\n\nfunc main() {\n}\n")
+
+}
+
+func Test_5(t *testing.T) {
+	out, err := Parse(src_5)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	checkBlock(t, out, TypeRoot, 3)
+
+	child := out.Children[0]
+	checkBlock(t, child, TypeP, 1)
+
+	child = child.Children[0]
+	checkTextBlock(t, child, "Hey")
+
+	child = out.Children[1]
+	checkBlock(t, child, TypeP, 1)
+	child = child.Children[0]
+	checkTextBlock(t, child, "```java package main")
+
+	child = out.Children[2]
+	checkBlock(t, child, TypeP, 1)
+	child = child.Children[0]
+	checkTextBlock(t, child, "func main() { } ```")
 
 }
