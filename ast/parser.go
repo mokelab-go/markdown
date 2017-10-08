@@ -165,6 +165,12 @@ func Parse(src string) (*Block, error) {
 		case code:
 			if char == '`' {
 				state = read_bq_end_1
+			} else if char == '<' {
+				textValue = appendStr(textValue, "&lt;")
+				out = appendStr(out, "&lt;")
+			} else if char == '>' {
+				textValue = appendStr(textValue, "&gt;")
+				out = appendStr(out, "&gt;")
 			} else {
 				textValue = append(textValue, char)
 				out = append(out, char)
