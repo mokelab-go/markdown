@@ -79,6 +79,12 @@ Androidのアカウント管理の仕組みを使おう
  - [アクセストークン取得を実装する](./step8_get_token.html)
 `
 
+const markdown_4 = "# xml\n\n" +
+	"```\n" +
+	"<manifest>\n" +
+	"</manifest>" +
+	"```\n"
+
 func Test_OK(t *testing.T) {
 	src := "# OK\n\nThis is sample text\n\n![img](./image.webp)"
 	m := NewMarkdown()
@@ -113,6 +119,16 @@ func Test_2(t *testing.T) {
 func Test_3(t *testing.T) {
 	m := NewMarkdown()
 	out, err := m.Compile(markdown_3)
+	if err != nil {
+		t.Errorf("error : %s", err)
+		return
+	}
+	fmt.Printf(out)
+}
+
+func Test_4(t *testing.T) {
+	m := NewMarkdown()
+	out, err := m.Compile(markdown_4)
 	if err != nil {
 		t.Errorf("error : %s", err)
 		return
