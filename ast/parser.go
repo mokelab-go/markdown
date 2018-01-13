@@ -179,15 +179,17 @@ func Parse(src string) (*Block, error) {
 			if char == '`' {
 				state = read_bq_end_2
 			} else {
-				out = appendStr(out, "`")
-				index--
+				textValue = append(textValue, '`')
+				textValue = append(textValue, char)
+				state = code
 			}
 		case read_bq_end_2:
 			if char == '`' {
 				state = read_bq_end_3
 			} else {
-				out = appendStr(out, "`1")
-				index--
+				textValue = appendStr(textValue, "``")
+				textValue = append(textValue, char)
+				state = code
 			}
 		case read_bq_end_3:
 			if char == '\n' {

@@ -8,7 +8,7 @@ func checkTextBlock(t *testing.T, b *Block, value string) {
 		return
 	}
 	if b.Value != value {
-		t.Errorf("Value must be %s but %s", value, b.Value)
+		t.Errorf("Value must be %s but %s len=%d but %d", value, b.Value, len(value), len(b.Value))
 		return
 	}
 }
