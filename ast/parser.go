@@ -17,7 +17,7 @@ const (
 	p
 	code_block
 
-	state_none = iota
+	stateReadBlock = iota
 	read_head_space
 
 	read_bq_1
@@ -32,83 +32,79 @@ const (
 	read_h1
 	read_h2
 	text
-	text_link_start
-	text_link_end
-	text_link_url_start
+	textLinkStart
+	textLinkEnd
+	textLinkUrlStart
 	text_link_url_end
-	text_image_1
-	text_image_start
-	text_image_end
-	text_image_url_start
-	text_image_url_attr_key
-	text_image_url_attr_value
+	textImage1
+	textImageStart
+	textImageEnd
+	textImageURLStart
+	textImageURLAttrKey
+	textImageURLAttrValue
 	text_image_url_end
 	text_br
+	textCodeStart
+	textCodeEnd
+	textInlineCode
 )
 
 func Parse(src string) (*Block, error) {
-	out := make([]byte, 0, len(src)*2)
 	var textValue []byte
-	var linkText []byte
-	var urlText []byte
 	var attrKey []byte
 	var attrValue []byte
-	var attrs map[string]string
-	state := state_none
-	block := block_none
+	state := stateReadBlock
 	index := 0
 	srcLen := len(src)
 	root := newBlock(TypeRoot)
 	currentBlock := root
-	blockStack := make([]*Block, 0)
+	blockStack := &blockStack{values: make([]*Block, 0)}
 
 	for index < srcLen {
 		char := src[index]
 		switch state {
-		case state_none:
+		case stateReadBlock:
 			if char == '#' {
 				state = read_h1
 			} else if char == '`' {
 				state = read_bq_1
 			} else if char == '\n' {
-				if block == ul {
-					currentBlock = blockStack[len(blockStack)-1]
-					blockStack = blockStack[:len(blockStack)-1]
-					out = addBlockEnd(out, block)
-					block = block_none
+				if currentBlock.Type == TypeLI {
+					// pop x2
+					blockStack.Pop()
+					blockStack.Pop()
 				}
 				// ignore
 			} else if char == ' ' {
 				state = read_head_space
 			} else {
+				// Add p-text block
 				pBlock := newBlock(TypeP)
 				textBlock := newBlock(TypeText)
-				pBlock.Children = append(pBlock.Children, textBlock)
-				currentBlock.Children = append(currentBlock.Children, pBlock)
-				blockStack = append(blockStack, currentBlock)
-				blockStack = append(blockStack, pBlock)
-				currentBlock = textBlock
+				appendChild(currentBlock, pBlock)
+				appendChild(pBlock, textBlock)
+				blockStack.Push(currentBlock)
+				blockStack.Push(pBlock)
 
 				state = text
-				block = p
+				currentBlock = textBlock
 				textValue = make([]byte, 0)
-				out = appendStr(out, "<p>")
 				index--
 			}
 		case read_bq_1:
 			if char == '`' {
 				state = read_bq_2
 			} else {
+				// textnode + start code block
 				pBlock := newBlock(TypeP)
-				textBlock := newBlock(TypeText)
-				pBlock.Children = append(pBlock.Children, textBlock)
-				currentBlock.Children = append(currentBlock.Children, pBlock)
-				blockStack = append(blockStack, currentBlock)
-				blockStack = append(blockStack, pBlock)
-				currentBlock = textBlock
+				codeBlock := newBlock(TypeCode)
+				appendChild(currentBlock, pBlock)
+				appendChild(pBlock, codeBlock)
+				blockStack.Push(currentBlock)
+				blockStack.Push(pBlock)
 
-				state = text
-				block = p
+				state = textInlineCode
+				currentBlock = codeBlock
 				textValue = make([]byte, 0)
 				index--
 			}
@@ -118,48 +114,44 @@ func Parse(src string) (*Block, error) {
 			} else {
 				pBlock := newBlock(TypeP)
 				textBlock := newBlock(TypeText)
-				pBlock.Children = append(pBlock.Children, textBlock)
-				currentBlock.Children = append(currentBlock.Children, pBlock)
-				blockStack = append(blockStack, currentBlock)
-				blockStack = append(blockStack, pBlock)
-				currentBlock = textBlock
+				appendChild(currentBlock, pBlock)
+				appendChild(pBlock, textBlock)
+				blockStack.Push(currentBlock)
+				blockStack.Push(pBlock)
 
 				state = text
-				block = p
+				currentBlock = textBlock
 				textValue = make([]byte, 0)
 				textValue = appendStr(textValue, "``")
-				out = appendStr(out, "``")
 				index--
 			}
 		case read_bq_3:
 			if char == '\n' {
-				state = code
-				block = code_block
+
 				codeBlock := newBlock(TypePreCode)
 				textBlock := newBlock(TypeText)
-				textValue = make([]byte, 0)
 				appendChild(currentBlock, codeBlock)
 				appendChild(codeBlock, textBlock)
-				blockStack = append(blockStack, currentBlock)
-				blockStack = append(blockStack, codeBlock)
+				blockStack.Push(currentBlock)
+				blockStack.Push(codeBlock)
+
+				state = code
 				currentBlock = textBlock
-				out = appendStr(out, "<pre><code>")
+				textValue = make([]byte, 0)
 			} else {
 				// TODO : check lang
 				pBlock := newBlock(TypeP)
 				textBlock := newBlock(TypeText)
-				pBlock.Children = append(pBlock.Children, textBlock)
-				currentBlock.Children = append(currentBlock.Children, pBlock)
-				blockStack = append(blockStack, currentBlock)
-				blockStack = append(blockStack, pBlock)
-				currentBlock = textBlock
+				appendChild(currentBlock, pBlock)
+				appendChild(pBlock, textBlock)
+				blockStack.Push(currentBlock)
+				blockStack.Push(pBlock)
 
 				state = text
-				block = p
+				currentBlock = textBlock
 				textValue = make([]byte, 0)
 				textValue = appendStr(textValue, "```")
 
-				out = appendStr(out, "```")
 				index--
 			}
 		case code:
@@ -167,13 +159,10 @@ func Parse(src string) (*Block, error) {
 				state = read_bq_end_1
 			} else if char == '<' {
 				textValue = appendStr(textValue, "&lt;")
-				out = appendStr(out, "&lt;")
 			} else if char == '>' {
 				textValue = appendStr(textValue, "&gt;")
-				out = appendStr(out, "&gt;")
 			} else {
 				textValue = append(textValue, char)
-				out = append(out, char)
 			}
 		case read_bq_end_1:
 			if char == '`' {
@@ -193,38 +182,35 @@ func Parse(src string) (*Block, error) {
 			}
 		case read_bq_end_3:
 			if char == '\n' {
-				setTextValue(currentBlock, textValue)
-				currentBlock = blockStack[len(blockStack)-2]
-				blockStack = blockStack[:len(blockStack)-2]
+				currentBlock.Value = string(textValue)
 
-				out = appendStr(out, "</code></pre>\n\n")
-				block = block_none
-				state = state_none
+				state = stateReadBlock
+				currentBlock = blockStack.Pop()
+				currentBlock = blockStack.Pop()
+			} else if char == ' ' {
+				// ignore
 			} else {
-				return nil, errors.New(fmt.Sprintf("\\n expected byt %s at %d", char, index))
+				return nil, errors.New(fmt.Sprintf("\\n expected byte %d at %d", char, index))
 			}
 		case read_head_space:
 			if char == '*' || char == '-' {
 				state = read_ul
 			} else {
 				state = text
-				block = p
-				out = appendStr(out, "<p>")
-				out = append(out, char)
 			}
 		case read_ul:
 			if char == ' ' {
-				state = text
-				if block == ul {
+				if currentBlock.Type == TypeUL {
 					liBlock := newBlock(TypeLI)
 					textBlock := newBlock(TypeText)
 					appendChild(currentBlock, liBlock)
 					appendChild(liBlock, textBlock)
-					blockStack = append(blockStack, currentBlock)
-					blockStack = append(blockStack, liBlock)
+					blockStack.Push(currentBlock)
+					blockStack.Push(liBlock)
+
+					state = text
 					currentBlock = textBlock
 					textValue = make([]byte, 0)
-					out = appendStr(out, " <li>")
 				} else {
 					ulBlock := newBlock(TypeUL)
 					liBlock := newBlock(TypeLI)
@@ -232,232 +218,259 @@ func Parse(src string) (*Block, error) {
 					appendChild(currentBlock, ulBlock)
 					appendChild(ulBlock, liBlock)
 					appendChild(liBlock, textBlock)
-					blockStack = append(blockStack, currentBlock)
-					blockStack = append(blockStack, ulBlock)
-					blockStack = append(blockStack, liBlock)
+					blockStack.Push(currentBlock)
+					blockStack.Push(ulBlock)
+					blockStack.Push(liBlock)
+
+					state = text
 					currentBlock = textBlock
 					textValue = make([]byte, 0)
-					out = appendStr(out, "<ul>\n <li>")
-					block = ul
 				}
 			} else {
 				return nil, errors.New(fmt.Sprintf("unexpected token at %d", index))
 			}
 		case text:
 			if char == '\n' {
-				if block == ul {
-					state = state_none
-					setTextValue(currentBlock, textValue)
-					currentBlock = blockStack[len(blockStack)-2]
-					blockStack = blockStack[:len(blockStack)-2]
+				parentBlock := blockStack.Top()
+				if parentBlock.Type == TypeLI {
+					currentBlock.Value = string(textValue)
 
-					out = appendStr(out, "</li>\n")
+					state = stateReadBlock
+					// pop x 2
+					currentBlock = blockStack.Pop()
+					currentBlock = blockStack.Pop()
 				} else {
 					state = text_br
 				}
 			} else if char == '[' {
-				state = text_link_start
-				linkText = make([]byte, 0)
+				currentBlock.Value = string(textValue)
+
+				// add link node
+				aBlock := newBlock(TypeAnchor)
+				appendChild(blockStack.Top(), aBlock)
+
+				state = textLinkStart
+				currentBlock = aBlock
+				textValue = make([]byte, 0)
 			} else if char == '!' {
-				state = text_image_1
-				linkText = make([]byte, 0)
+				state = textImage1
+			} else if char == '`' {
+				currentBlock.Value = string(textValue)
+
+				// add inline code node
+				inlineCodeBlock := newBlock(TypeCode)
+				appendChild(blockStack.Top(), inlineCodeBlock)
+
+				state = textInlineCode
+				currentBlock = inlineCodeBlock
+				textValue = make([]byte, 0)
 			} else if char == '<' {
-				out = appendStr(out, "&lt;")
+				// nop
 			} else if char == '>' {
-				out = appendStr(out, "&gt;")
+				// nop
 			} else {
 				textValue = append(textValue, char)
 			}
-		case text_link_start:
+		case textLinkStart:
 			if char == ']' {
-				state = text_link_end
-			} else {
-				linkText = append(linkText, char)
-			}
-		case text_link_end:
-			if char == '(' {
-				state = text_link_url_start
-				urlText = make([]byte, 0)
-			} else {
-				return nil, errors.New(fmt.Sprintf("expected is ( but %s at %d", char, index))
-			}
-		case text_link_url_start:
-			if char == ')' {
-				state = text
-				textBlock := newBlock(TypeText)
-				textBlock.Value = string(textValue)
-				textValue = make([]byte, 0)
-				appendChild(currentBlock, textBlock)
-				aBlock := newBlock(TypeAnchor)
-				aBlock.URL = string(urlText)
-				aBlock.Value = string(linkText)
-				appendChild(currentBlock, aBlock)
+				currentBlock.Value = string(textValue)
 
-				out = appendStr(out, fmt.Sprintf("<a href=\"%s\">%s</a>", string(urlText), string(linkText)))
+				state = textLinkEnd
+				textValue = make([]byte, 0)
 			} else {
-				urlText = append(urlText, char)
+				textValue = append(textValue, char)
 			}
-		case text_image_1:
-			if char == '[' {
-				state = text_image_start
+		case textLinkEnd:
+			if char == '(' {
+				state = textLinkUrlStart
 			} else {
-				out = appendStr(out, "!")
+				return nil, fmt.Errorf("expected is ( but %d at %d", char, index)
+			}
+		case textLinkUrlStart:
+			if char == ')' {
+				currentBlock.URL = string(textValue)
+
+				// add next text block
+				textBlock := newBlock(TypeText)
+				appendChild(blockStack.Top(), textBlock)
+
+				state = text
+				currentBlock = textBlock
+				textValue = make([]byte, 0)
+			} else {
+				textValue = append(textValue, char)
+			}
+		case textImage1:
+			if char == '[' {
+				currentBlock.Value = string(textValue)
+
+				imageBlock := newBlock(TypeImage)
+				appendChild(blockStack.Top(), imageBlock)
+
+				state = textImageStart
+				currentBlock = imageBlock
+				textValue = make([]byte, 0)
+			} else {
+				textValue = append(textValue, '!')
 				index--
 				state = text
 			}
-		case text_image_start:
+		case textImageStart:
 			if char == ']' {
-				state = text_image_end
-			} else {
-				linkText = append(linkText, char)
-			}
-		case text_image_end:
-			if char == '(' {
-				state = text_image_url_start
-				urlText = make([]byte, 0)
-			} else {
-				return nil, errors.New(fmt.Sprintf("expected is ( but %s at %d", char, index))
-			}
-		case text_image_url_start:
-			if char == ')' {
-				state = text
-				textBlock := newBlock(TypeText)
-				textBlock.Value = string(textValue)
-				textValue = make([]byte, 0)
-				appendChild(currentBlock, textBlock)
-				imageBlock := newBlock(TypeImage)
-				imageBlock.URL = string(urlText)
-				imageBlock.Value = string(linkText)
-				appendChild(currentBlock, imageBlock)
+				currentBlock.Value = string(textValue)
 
-				out = appendStr(out, fmt.Sprintf("<img src=\"%s\" title=\"%s\"/>", string(urlText), string(linkText)))
-			} else if char == ' ' {
-				state = text_image_url_attr_key
-				attrKey = make([]byte, 0)
-				attrs = make(map[string]string)
+				state = textImageEnd
+				textValue = make([]byte, 0)
 			} else {
-				urlText = append(urlText, char)
+				textValue = append(textValue, char)
 			}
-		case text_image_url_attr_key:
+		case textImageEnd:
+			if char == '(' {
+				state = textImageURLStart
+			} else {
+				return nil, fmt.Errorf("expected is ( but %d at %d", char, index)
+			}
+		case textImageURLStart:
+			if char == ')' {
+				currentBlock.URL = string(textValue)
+
+				// set next text block
+				textBlock := newBlock(TypeText)
+				appendChild(blockStack.Top(), textBlock)
+
+				state = text
+				currentBlock = textBlock
+				textValue = make([]byte, 0)
+			} else if char == ' ' {
+				currentBlock.URL = string(textValue)
+				currentBlock.Attributes = make(map[string]string)
+
+				state = textImageURLAttrKey
+				attrKey = make([]byte, 0)
+			} else {
+				textValue = append(textValue, char)
+			}
+		case textImageURLAttrKey:
 			if char == '=' {
-				state = text_image_url_attr_value
+				state = textImageURLAttrValue
 				attrValue = make([]byte, 0)
 			} else {
 				attrKey = append(attrKey, char)
 			}
-		case text_image_url_attr_value:
+		case textImageURLAttrValue:
 			if char == ' ' {
-				state = text_image_url_attr_key
-				attrs[string(attrKey)] = string(attrValue)
+				currentBlock.Attributes[string(attrKey)] = string(attrValue)
+
+				state = textImageURLAttrKey
 				attrKey = make([]byte, 0)
 			} else if char == ')' {
-				attrs[string(attrKey)] = string(attrValue)
-				state = text
+				currentBlock.Attributes[string(attrKey)] = string(attrValue)
+
+				// set next text block
 				textBlock := newBlock(TypeText)
-				textBlock.Value = string(textValue)
+				appendChild(blockStack.Top(), textBlock)
+
+				state = text
+				currentBlock = textBlock
 				textValue = make([]byte, 0)
-				appendChild(currentBlock, textBlock)
-				imageBlock := newBlock(TypeImage)
-				imageBlock.URL = string(urlText)
-				imageBlock.Value = string(linkText)
-				imageBlock.Attributes = attrs
-				appendChild(currentBlock, imageBlock)
 			} else {
 				attrValue = append(attrValue, char)
 			}
 		case text_br:
 			if char == '\n' {
-				state = state_none
-				setTextValue(currentBlock, textValue)
-				currentBlock = blockStack[len(blockStack)-2]
-				blockStack = blockStack[:len(blockStack)-2]
+				// end of text and parent block
+				currentBlock.Value = string(textValue)
+				// pop x 2
+				currentBlock = blockStack.Pop()
+				currentBlock = blockStack.Pop()
 
-				out = addBlockEnd(out, block)
-				block = block_none
+				state = stateReadBlock
 			} else {
 				state = text
 				textValue = append(textValue, ' ')
-				textValue = append(textValue, char)
-				out = append(out, ' ')
-				out = append(out, char)
+				index--
 			}
 		case read_h1: // #
 			if char == ' ' {
-				blockStack, currentBlock =
-					addBlockText(blockStack,
-						currentBlock,
-						TypeH1)
+				h1Block := newBlock(TypeH1)
+				textBlock := newBlock(TypeText)
+
+				appendChild(currentBlock, h1Block)
+				appendChild(h1Block, textBlock)
+				blockStack.Push(currentBlock)
+				blockStack.Push(h1Block)
+
+				currentBlock = textBlock
 				textValue = make([]byte, 0)
 
-				block = h1
 				state = text
-				out = appendStr(out, "<h1>")
 			} else if char == '#' {
 				state = read_h2
 			}
 		case read_h2: // ##
 			if char == ' ' {
-				blockStack, currentBlock =
-					addBlockText(blockStack,
-						currentBlock,
-						TypeH2)
+				h2Block := newBlock(TypeH2)
+				textBlock := newBlock(TypeText)
+				appendChild(currentBlock, h2Block)
+				appendChild(h2Block, textBlock)
+				blockStack.Push(currentBlock)
+				blockStack.Push(h2Block)
+
+				currentBlock = textBlock
 				textValue = make([]byte, 0)
 
-				block = h2
 				state = text
-				out = appendStr(out, "<h2>")
+			}
+		case textInlineCode:
+			if char == '`' {
+				currentBlock.Value = string(textValue)
+
+				// set next text block
+				textBlock := newBlock(TypeText)
+				appendChild(blockStack.Top(), textBlock)
+
+				state = text
+				currentBlock = textBlock
+				textValue = make([]byte, 0)
+			} else if char == '<' {
+				textValue = appendStr(textValue, "&lt;")
+			} else if char == '>' {
+				textValue = appendStr(textValue, "&gt;")
+			} else {
+				textValue = append(textValue, char)
 			}
 		}
 		index++
 	}
 	if currentBlock.Type == TypeText {
-		setTextValue(currentBlock, textValue)
+		currentBlock.Value = string(textValue)
 	}
-	out = addBlockEnd(out, block)
 
 	return root, nil
-}
-
-func addBlockText(stack []*Block, current *Block, blockType BlockType) ([]*Block, *Block) {
-	block := newBlock(blockType)
-	textBlock := newBlock(TypeText)
-	// children
-	current.Children = append(current.Children, block)
-	block.Children = append(block.Children, textBlock)
-
-	stack = append(stack, current)
-	stack = append(stack, block)
-	return stack, textBlock
-}
-
-func setTextValue(current *Block, value []byte) {
-	if len(current.Children) == 0 {
-		current.Value = string(value)
-	} else {
-		el := newBlock(TypeText)
-		el.Value = string(value)
-		current.Children = append(current.Children, el)
-	}
 }
 
 func appendChild(b *Block, c *Block) {
 	b.Children = append(b.Children, c)
 }
 
-func addBlockEnd(out []byte, block int) []byte {
-	switch block {
-	case h1:
-		out = appendStr(out, "</h1>\n\n")
-	case h2:
-		out = appendStr(out, "</h2>\n\n")
-	case ul:
-		out = appendStr(out, "</ul>\n\n")
-	case p:
-		out = appendStr(out, "</p>\n\n")
-	}
-	return out
-}
-
 func appendStr(out []byte, text string) []byte {
 	return append(out, text...)
+}
+
+type blockStack struct {
+	values []*Block
+}
+
+func (s *blockStack) Push(v *Block) {
+	s.values = append(s.values, v)
+}
+
+func (s *blockStack) Pop() *Block {
+	top := s.values[len(s.values)-1]
+	s.values = s.values[:len(s.values)-1]
+	return top
+}
+
+func (s *blockStack) Top() *Block {
+	return s.values[len(s.values)-1]
 }
