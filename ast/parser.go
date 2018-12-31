@@ -186,6 +186,7 @@ func Parse(src string) (*Block, error) {
 
 				state = stateReadBlock
 				currentBlock = blockStack.Pop()
+				currentBlock = blockStack.Pop()
 			} else if char == ' ' {
 				// ignore
 			} else {

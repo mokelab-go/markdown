@@ -24,12 +24,13 @@ Hey
 
 `
 
-const src_4 = "Hey\n\n" +
+const src4 = "Hey\n\n" +
 	"```\n" +
 	"package main\n\n" +
 	"func main() {\n" +
 	"}\n" +
-	"```\n"
+	"```\n\n" +
+	"text node"
 
 const src_5 = "Hey\n\n" +
 	"```java\n" +
@@ -193,23 +194,32 @@ func Test_3(t *testing.T) {
 }
 
 func Test_4(t *testing.T) {
-	out, err := Parse(src_4)
+	out, err := Parse(src4)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
 	}
-	checkBlock(t, out, TypeRoot, 2)
+	// root
+	//    |- p
+	//    |   |- text
+	//    |- pre
+	//    |- p
+	checkBlock(t, out, TypeRoot, 3)
 
-	child := out.Children[0]
-	checkBlock(t, child, TypeP, 1)
+	pBlock := out.Children[0]
+	checkBlock(t, pBlock, TypeP, 1)
+	pText := pBlock.Children[0]
+	checkTextBlock(t, pText, "Hey")
 
-	child = child.Children[0]
-	checkTextBlock(t, child, "Hey")
+	preCodeBlock := out.Children[1]
+	checkBlock(t, preCodeBlock, TypePreCode, 1)
+	codeText := preCodeBlock.Children[0]
+	checkTextBlock(t, codeText, "package main\n\nfunc main() {\n}\n")
 
-	child = out.Children[1]
-	checkBlock(t, child, TypePreCode, 1)
-	child = child.Children[0]
-	checkTextBlock(t, child, "package main\n\nfunc main() {\n}\n")
+	pBlock = out.Children[2]
+	checkBlock(t, pBlock, TypeP, 1)
+	pText = pBlock.Children[0]
+	checkTextBlock(t, pText, "text node")
 
 }
 

@@ -5,14 +5,15 @@ import (
 	"testing"
 )
 
-const markdown_1 = "# OK\n\n" +
+const markdown1 = "# OK\n\n" +
 	"```\n" +
 	"# TOMLの例\n" +
 	"[DB]\n" +
 	"user = \"fkm\"\n" +
 	"pass = \"moke\"\n" +
 	"db = \"tech\"\n" +
-	"```\n"
+	"```\n\n" +
+	"Inline codeは`このように`書きますよ"
 
 const markdown_2 = `
 ## 起動モード
@@ -98,7 +99,7 @@ func Test_OK(t *testing.T) {
 
 func Test_1(t *testing.T) {
 	m := NewMarkdown()
-	out, err := m.Compile(markdown_1)
+	out, err := m.Compile(markdown1)
 	if err != nil {
 		t.Errorf("error : %s", err)
 		return
