@@ -1,6 +1,9 @@
 package ast
 
-import "testing"
+import (
+	"runtime/debug"
+	"testing"
+)
 
 func checkTextBlock(t *testing.T, b *Block, value string) {
 	if b.Type != TypeText {
@@ -8,7 +11,7 @@ func checkTextBlock(t *testing.T, b *Block, value string) {
 		return
 	}
 	if b.Value != value {
-		t.Errorf("Value must be %s but %s len=%d but %d", value, b.Value, len(value), len(b.Value))
+		t.Errorf("Value must be %s but %s len=%d but %d\n%s", value, b.Value, len(value), len(b.Value), debug.Stack())
 		return
 	}
 }
@@ -43,6 +46,17 @@ func checkImageBlock(t *testing.T, b *Block, text, url string) {
 	}
 }
 
+func checkInlineCodeBlock(t *testing.T, b *Block, value string) {
+	if b.Type != TypeCode {
+		t.Errorf("Type must be code but %d", b.Type)
+		return
+	}
+	if b.Value != value {
+		t.Errorf("Value must be %s but %s len=%d but %d\n%s", value, b.Value, len(value), len(b.Value), debug.Stack())
+		return
+	}
+}
+
 func checkChildrenCount(t *testing.T, b *Block, value int) {
 	if len(b.Children) != value {
 		t.Errorf("Children must have %d but %d", value, len(b.Children))
@@ -56,7 +70,7 @@ func checkBlock(t *testing.T, b *Block, tp BlockType, count int) {
 		return
 	}
 	if len(b.Children) != count {
-		t.Errorf("children count must be %d but %d", count, len(b.Children))
+		t.Errorf("children count must be %d but %d\n%s", count, len(b.Children), debug.Stack())
 		return
 	}
 }

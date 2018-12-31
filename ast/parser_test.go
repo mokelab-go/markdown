@@ -47,34 +47,57 @@ const src_6 = "Hey\n\n" +
 	"}\n" +
 	"```\n"
 
+const src7 = "# Program\n" +
+	"\n" +
+	"This is `code` block\n"
+
+func Test_Stack(t *testing.T) {
+	stack := &blockStack{values: make([]*Block, 0)}
+	stack.Push(newBlock(TypeRoot))
+	stack.Push(newBlock(TypeP))
+	v := stack.Pop()
+	if v.Type != TypeP {
+		t.Errorf("Wrong node")
+	}
+	v = stack.Pop()
+	if v.Type != TypeRoot {
+		t.Errorf("Wrong node")
+	}
+}
+
 func Test_1(t *testing.T) {
 	out, err := Parse(src_1)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
 	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- p
+	//       |- text
+	//       |- image
+	//       |- text(empty)
 	checkBlock(t, out, TypeRoot, 2)
 
-	child := out.Children[0]
-	checkBlock(t, child, TypeH1, 1)
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
 
-	child = child.Children[0]
-	checkTextBlock(t, child, "Hello")
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "Hello")
 
-	child = out.Children[1]
-	checkBlock(t, child, TypeP, 1)
+	pBlock := out.Children[1]
+	checkBlock(t, pBlock, TypeP, 3)
 
-	text := child.Children[0]
-	checkBlock(t, text, TypeText, 3)
-	textChild := text.Children[0]
-	checkTextBlock(t, textChild, "World")
-	textChild = text.Children[1]
-	checkImageBlock(t, textChild, "image", "./a.webp")
-	if len(textChild.Attributes) != 2 {
-		t.Errorf("Attributes must have 2 but %d", len(textChild.Attributes))
+	text := pBlock.Children[0]
+	checkTextBlock(t, text, "World")
+	imageBlock := pBlock.Children[1]
+	checkImageBlock(t, imageBlock, "image", "./a.webp")
+	if len(imageBlock.Attributes) != 2 {
+		t.Errorf("Attributes must have 2 but %d", len(imageBlock.Attributes))
 		return
 	}
-	v, ok := textChild.Attributes["width"]
+	v, ok := imageBlock.Attributes["width"]
 	if !ok {
 		t.Errorf("Attributes must have width")
 		return
@@ -83,7 +106,7 @@ func Test_1(t *testing.T) {
 		t.Errorf("Width must be 100 but %s", v)
 		return
 	}
-	v, ok = textChild.Attributes["height"]
+	v, ok = imageBlock.Attributes["height"]
 	if !ok {
 		t.Errorf("Attributes must have height")
 		return
@@ -92,8 +115,8 @@ func Test_1(t *testing.T) {
 		t.Errorf("height must be 200 but %s", v)
 		return
 	}
-	textChild = text.Children[2]
-	checkTextBlock(t, textChild, "")
+	text = pBlock.Children[2]
+	checkTextBlock(t, text, "")
 }
 
 func Test_2(t *testing.T) {
@@ -102,19 +125,24 @@ func Test_2(t *testing.T) {
 		t.Errorf("Parse error : %s", err)
 		return
 	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- h2
+	//       |- text
 	checkBlock(t, out, TypeRoot, 2)
 
-	child := out.Children[0]
-	checkBlock(t, child, TypeH1, 1)
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
 
-	child = child.Children[0]
-	checkTextBlock(t, child, "Hello")
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "Hello")
 
-	child = out.Children[1]
-	checkBlock(t, child, TypeH2, 1)
+	h2Block := out.Children[1]
+	checkBlock(t, h2Block, TypeH2, 1)
 
-	child = child.Children[0]
-	checkTextBlock(t, child, "World")
+	h2Text := h2Block.Children[0]
+	checkTextBlock(t, h2Text, "World")
 }
 
 func Test_3(t *testing.T) {
@@ -123,37 +151,45 @@ func Test_3(t *testing.T) {
 		t.Errorf("Parse error : %s", err)
 		return
 	}
+	// root
+	//    |- p
+	//    |   |- text
+	//    |- ul
+	//       |- li
+	//       |- li
+	//       |- li
+	//           |- text(empty)
+	//           |- anchor
+	//           |- text(empty)
 	checkBlock(t, out, TypeRoot, 2)
 
-	child := out.Children[0]
-	checkBlock(t, child, TypeP, 1)
+	pBlock := out.Children[0]
+	checkBlock(t, pBlock, TypeP, 1)
 
-	child = child.Children[0]
-	checkTextBlock(t, child, "Hey")
+	pText := pBlock.Children[0]
+	checkTextBlock(t, pText, "Hey")
 
-	child = out.Children[1]
-	checkBlock(t, child, TypeUL, 3)
+	ulBlock := out.Children[1]
+	checkBlock(t, ulBlock, TypeUL, 3)
 
-	li := child.Children[0]
-	checkBlock(t, li, TypeLI, 1)
-	liText := li.Children[0]
+	liBlock := ulBlock.Children[0]
+	checkBlock(t, liBlock, TypeLI, 1)
+	liText := liBlock.Children[0]
 	checkTextBlock(t, liText, "a")
 
-	li = child.Children[1]
-	checkBlock(t, li, TypeLI, 1)
-	liText = li.Children[0]
+	liBlock = ulBlock.Children[1]
+	checkBlock(t, liBlock, TypeLI, 1)
+	liText = liBlock.Children[0]
 	checkTextBlock(t, liText, "b")
 
-	li = child.Children[2]
-	checkBlock(t, li, TypeLI, 1)
-	liText = li.Children[0]
-	checkBlock(t, liText, TypeText, 3)
-	text1 := liText.Children[0]
-	checkTextBlock(t, text1, "")
-	text2 := liText.Children[1]
-	checkAnchorBlock(t, text2, "c", "https://mokelab.com")
-	text3 := liText.Children[2]
-	checkTextBlock(t, text3, "")
+	liBlock = ulBlock.Children[2]
+	checkBlock(t, liBlock, TypeLI, 3)
+	liText = liBlock.Children[0]
+	checkTextBlock(t, liText, "")
+	aBlock := liBlock.Children[1]
+	checkAnchorBlock(t, aBlock, "c", "https://mokelab.com")
+	liText = liBlock.Children[2]
+	checkTextBlock(t, liText, "")
 }
 
 func Test_4(t *testing.T) {
@@ -178,29 +214,45 @@ func Test_4(t *testing.T) {
 }
 
 func Test_5(t *testing.T) {
+	// language is not supported..
 	out, err := Parse(src_5)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
 	}
+	// root
+	//    |- p
+	//    |  |- text
+	//    |- p
+	//    |  |- text
+	//    |- p
+	//       |- text
+	//       |- code(empty)
+	//       |- text(empty)
+	//       |- code(empty)
 	checkBlock(t, out, TypeRoot, 3)
 
-	child := out.Children[0]
-	checkBlock(t, child, TypeP, 1)
+	pBlock := out.Children[0]
+	checkBlock(t, pBlock, TypeP, 1)
 
-	child = child.Children[0]
-	checkTextBlock(t, child, "Hey")
+	pText := pBlock.Children[0]
+	checkTextBlock(t, pText, "Hey")
 
-	child = out.Children[1]
-	checkBlock(t, child, TypeP, 1)
-	child = child.Children[0]
-	checkTextBlock(t, child, "```java package main")
+	pBlock = out.Children[1]
+	checkBlock(t, pBlock, TypeP, 1)
+	pText = pBlock.Children[0]
+	checkTextBlock(t, pText, "```java package main")
 
-	child = out.Children[2]
-	checkBlock(t, child, TypeP, 1)
-	child = child.Children[0]
-	checkTextBlock(t, child, "func main() { } ```")
-
+	pBlock = out.Children[2]
+	checkBlock(t, pBlock, TypeP, 4)
+	pText = pBlock.Children[0]
+	checkTextBlock(t, pText, "func main() { } ")
+	pCode := pBlock.Children[1]
+	checkBlock(t, pCode, TypeCode, 0)
+	pText = pBlock.Children[2]
+	checkTextBlock(t, pText, "")
+	pCode = pBlock.Children[3]
+	checkBlock(t, pCode, TypeCode, 0)
 }
 
 func Test_6(t *testing.T) {
@@ -221,4 +273,38 @@ func Test_6(t *testing.T) {
 	checkBlock(t, child, TypePreCode, 1)
 	child = child.Children[0]
 	checkTextBlock(t, child, "package main\n\nfunc main() {\n   s := `\n`\n}\n")
+}
+
+func Test_7(t *testing.T) {
+	out, err := Parse(src7)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- p
+	//       |- text
+	//       |- code
+	//       |- text
+	checkBlock(t, out, TypeRoot, 2)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "Program")
+
+	pBlock := out.Children[1]
+	checkBlock(t, pBlock, TypeP, 3)
+
+	pText := pBlock.Children[0]
+	checkTextBlock(t, pText, "This is ")
+
+	codeBlock := pBlock.Children[1]
+	checkInlineCodeBlock(t, codeBlock, "code")
+
+	pText = pBlock.Children[2]
+	checkTextBlock(t, pText, " block")
 }
