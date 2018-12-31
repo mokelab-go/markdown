@@ -201,7 +201,7 @@ func Parse(src string) (*Block, error) {
 				block = block_none
 				state = state_none
 			} else {
-				return nil, errors.New(fmt.Sprintf("\\n expected byt %s at %d", char, index))
+				return nil, errors.New(fmt.Sprintf("\\n expected byte %d at %d", char, index))
 			}
 		case read_head_space:
 			if char == '*' || char == '-' {
@@ -279,7 +279,7 @@ func Parse(src string) (*Block, error) {
 				state = text_link_url_start
 				urlText = make([]byte, 0)
 			} else {
-				return nil, errors.New(fmt.Sprintf("expected is ( but %s at %d", char, index))
+				return nil, errors.New(fmt.Sprintf("expected is ( but %d at %d", char, index))
 			}
 		case text_link_url_start:
 			if char == ')' {
@@ -316,7 +316,7 @@ func Parse(src string) (*Block, error) {
 				state = text_image_url_start
 				urlText = make([]byte, 0)
 			} else {
-				return nil, errors.New(fmt.Sprintf("expected is ( but %s at %d", char, index))
+				return nil, errors.New(fmt.Sprintf("expected is ( but %d at %d", char, index))
 			}
 		case text_image_url_start:
 			if char == ')' {
