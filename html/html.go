@@ -66,6 +66,10 @@ func printBlock(out []byte, block *ast.Block) []byte {
 		} else {
 			out = appendStr(out, block.Value)
 		}
+	case ast.TypeCode:
+		out = appendStr(out, "<code>")
+		out = appendStr(out, block.Value)
+		out = appendStr(out, "</code>\n\n")
 	}
 	return out
 }

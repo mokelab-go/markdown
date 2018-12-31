@@ -10,6 +10,7 @@ const (
 	TypeUL
 	TypeLI
 	TypePreCode
+	TypeCode
 	TypeText
 	TypeAnchor
 	TypeImage
