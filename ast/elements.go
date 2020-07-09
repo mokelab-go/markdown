@@ -1,21 +1,34 @@
 package ast
 
+// BlockType is a type of block
 type BlockType int
 
 const (
+	// TypeRoot is root
 	TypeRoot BlockType = iota + 1
+	// TypeP is paragraph
 	TypeP
+	// TypeH1 is header level 1
 	TypeH1
+	// TypeH2 is header level 2
 	TypeH2
+	// TypeUL is unordered list
 	TypeUL
+	// TypeLI is list item
 	TypeLI
+	// TypePreCode is pre code
 	TypePreCode
+	// TypeCode is inline code
 	TypeCode
+	// TypeText is text
 	TypeText
+	// TypeAnchor is anchor
 	TypeAnchor
+	// TypeImage is image
 	TypeImage
 )
 
+// Block is an element
 type Block struct {
 	Type       BlockType
 	URL        string

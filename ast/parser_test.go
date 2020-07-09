@@ -5,20 +5,20 @@ import (
 	"testing"
 )
 
-const src_1 = `
+const src1 = `
 # Hello
 
 World![image](./a.webp width=100 height=200)
 `
 
-const src_2 = `
+const src2 = `
 # Hello
 
 ## World
 
 `
 
-const src_3 = `
+const src3 = `
 Hey
 
  * a
@@ -35,14 +35,14 @@ const src4 = "Hey\n\n" +
 	"```\n\n" +
 	"text node"
 
-const src_5 = "Hey\n\n" +
+const src5 = "Hey\n\n" +
 	"```java\n" +
 	"package main\n\n" +
 	"func main() {\n" +
 	"}\n" +
 	"```\n"
 
-const src_6 = "Hey\n\n" +
+const src6 = "Hey\n\n" +
 	"```\n" +
 	"package main\n\n" +
 	"func main() {\n" +
@@ -113,7 +113,7 @@ func Test_Stack(t *testing.T) {
 }
 
 func Test_1(t *testing.T) {
-	out, err := Parse(src_1)
+	out, err := Parse(src1)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
@@ -167,7 +167,7 @@ func Test_1(t *testing.T) {
 }
 
 func Test_2(t *testing.T) {
-	out, err := Parse(src_2)
+	out, err := Parse(src2)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
@@ -193,7 +193,7 @@ func Test_2(t *testing.T) {
 }
 
 func Test_3(t *testing.T) {
-	out, err := Parse(src_3)
+	out, err := Parse(src3)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
@@ -271,7 +271,7 @@ func Test_4(t *testing.T) {
 
 func Test_5(t *testing.T) {
 	// language is not supported..
-	out, err := Parse(src_5)
+	out, err := Parse(src5)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
@@ -296,7 +296,7 @@ func Test_5(t *testing.T) {
 }
 
 func Test_6(t *testing.T) {
-	out, err := Parse(src_6)
+	out, err := Parse(src6)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
