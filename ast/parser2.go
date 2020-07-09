@@ -172,6 +172,27 @@ func stateReadText(s *parseState, char byte) (stateFunc, error) {
 		s.index++
 		return stateReadInlineCode, nil
 	}
+	// escape
+	if char == '<' {
+		s.textValue = appendStr(s.textValue, "&lt;")
+		s.index++
+		return stateReadText, nil
+	}
+	if char == '>' {
+		s.textValue = appendStr(s.textValue, "&gt;")
+		s.index++
+		return stateReadText, nil
+	}
+	if char == '&' {
+		s.textValue = appendStr(s.textValue, "&amp;")
+		s.index++
+		return stateReadText, nil
+	}
+	if char == '"' {
+		s.textValue = appendStr(s.textValue, "&quot;")
+		s.index++
+		return stateReadText, nil
+	}
 	s.textValue = append(s.textValue, char)
 	s.index++
 	return stateReadText, nil

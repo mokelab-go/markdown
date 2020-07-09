@@ -65,6 +65,35 @@ TOC
 
 Welcome!`
 
+const src9 = `# Non-closed code block
+
+` + "```" + `
+package main
+
+// not closed
+`
+
+const src10 = `# backquote in code block
+
+` + "```" + `
+package main
+// backquote in code block
+` + "``" + `
+
+` + "```" + `
+
+OK?
+`
+
+const src11 = `# NoNewLine after li
+
+ - Hello
+ - World
+Plain text
+`
+
+const src12 = `# <h1> "tag"`
+
 func Test_Stack(t *testing.T) {
 	stack := &blockStack{values: make([]*Block, 0)}
 	stack.Push(newBlock(TypeRoot))
@@ -353,6 +382,105 @@ func Test_8(t *testing.T) {
 
 	pText = pBlock.Children[0]
 	checkTextBlock(t, pText, "Welcome")
+}
+
+func Test_9(t *testing.T) {
+	out, err := Parse(src9)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- preCode
+	//    |  |- text
+	checkBlock(t, out, TypeRoot, 2)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "Non-closed code block")
+
+	preCodeBlock := out.Children[1]
+	checkBlock(t, preCodeBlock, TypePreCode, 1)
+}
+
+func Test_10(t *testing.T) {
+	out, err := Parse(src10)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- preCode
+	//    |  |- text
+	//    |- p
+	//       |- text
+	checkBlock(t, out, TypeRoot, 3)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "backquote in code block")
+
+	preCodeBlock := out.Children[1]
+	checkBlock(t, preCodeBlock, TypePreCode, 1)
+
+	pBlock := out.Children[2]
+	checkBlock(t, pBlock, TypeP, 1)
+}
+
+func Test_11(t *testing.T) {
+	out, err := Parse(src11)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- preCode
+	//    |  |- text
+	//    |- p
+	//       |- text
+	checkBlock(t, out, TypeRoot, 3)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "NoNewLine after li")
+
+	ulCodeBlock := out.Children[1]
+	checkBlock(t, ulCodeBlock, TypeUL, 2)
+
+	pBlock := out.Children[2]
+	checkBlock(t, pBlock, TypeP, 1)
+	pText := pBlock.Children[0]
+	checkTextBlock(t, pText, "Plain text")
+}
+
+func Test_12(t *testing.T) {
+	out, err := Parse(src12)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	checkBlock(t, out, TypeRoot, 1)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "&lt;h1&gt; &quot;tag&quot;")
 }
 
 func printTypes(b *Block, indent string) string {
