@@ -68,7 +68,7 @@ func stateReadRootBlock(s *parseState, char byte) (stateFunc, error) {
 		s.index++
 		return stateReadHn, nil
 	}
-	if char == '*' {
+	if char == '*' || char == '-' {
 		s.index++
 		return stateReadUL, nil
 	}
@@ -460,7 +460,7 @@ func stateReadNextLiToken(s *parseState, char byte) (stateFunc, error) {
 		s.index++
 		return stateReadNextLiToken, nil
 	}
-	if char == '*' {
+	if char == '*' || char == '-' {
 		s.index++
 		return stateReadFirstLiToken, nil
 	}

@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -352,4 +353,32 @@ func Test_8(t *testing.T) {
 
 	pText = pBlock.Children[0]
 	checkTextBlock(t, pText, "Welcome")
+}
+
+func printTypes(b *Block, indent string) string {
+	toTypeStr := func(t BlockType) string {
+		switch t {
+		case TypeText:
+			return "Text"
+		case TypeH1:
+			return "H1"
+		case TypeH2:
+			return "H2"
+		case TypeLI:
+			return "LI"
+		case TypeUL:
+			return "UL"
+		case TypeP:
+			return "P"
+		case TypePreCode:
+			return "Pre/Code"
+		default:
+			return "???"
+		}
+	}
+	out := fmt.Sprintf("%sType %s\n", indent, toTypeStr(b.Type))
+	for _, c := range b.Children {
+		out += fmt.Sprintf("%s  %s", indent, printTypes(c, "  "+indent))
+	}
+	return out
 }
