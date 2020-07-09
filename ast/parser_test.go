@@ -54,6 +54,16 @@ const src7 = "# Program\n" +
 	"\n" +
 	"This is `code` block\n"
 
+const src8 = `# Title
+
+TOC
+
+ * Item1
+ * Item2
+ * Item3
+
+Welcome!`
+
 func Test_Stack(t *testing.T) {
 	stack := &blockStack{values: make([]*Block, 0)}
 	stack.Push(newBlock(TypeRoot))
@@ -303,4 +313,43 @@ func Test_7(t *testing.T) {
 
 	pText = pBlock.Children[2]
 	checkTextBlock(t, pText, " block")
+}
+func Test_8(t *testing.T) {
+	out, err := Parse(src8)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- p
+	//    |  |- text
+	//    |- ul
+	//    |  |- li
+	//    |  |- li
+	//    |  |- li
+	//    |- p
+	//       |- text
+	checkBlock(t, out, TypeRoot, 4)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "Title")
+
+	pBlock := out.Children[1]
+	checkBlock(t, pBlock, TypeP, 1)
+	pText := pBlock.Children[0]
+	checkTextBlock(t, pText, "TOC")
+
+	ulBlock := out.Children[2]
+	checkBlock(t, ulBlock, TypeUL, 3)
+
+	pBlock = out.Children[3]
+	checkBlock(t, pBlock, TypeP, 1)
+
+	pText = pBlock.Children[0]
+	checkTextBlock(t, pText, "Welcome")
 }
