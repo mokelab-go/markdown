@@ -1,6 +1,8 @@
 package ast
 
-import "testing"
+import (
+	"testing"
+)
 
 const src_1 = `
 # Hello
@@ -233,14 +235,9 @@ func Test_5(t *testing.T) {
 	// root
 	//    |- p
 	//    |  |- text
-	//    |- p
-	//    |  |- text
-	//    |- p
+	//    |- pre
 	//       |- text
-	//       |- code(empty)
-	//       |- text(empty)
-	//       |- code(empty)
-	checkBlock(t, out, TypeRoot, 3)
+	checkBlock(t, out, TypeRoot, 2)
 
 	pBlock := out.Children[0]
 	checkBlock(t, pBlock, TypeP, 1)
@@ -249,20 +246,9 @@ func Test_5(t *testing.T) {
 	checkTextBlock(t, pText, "Hey")
 
 	pBlock = out.Children[1]
-	checkBlock(t, pBlock, TypeP, 1)
+	checkBlock(t, pBlock, TypePreCode, 1)
 	pText = pBlock.Children[0]
-	checkTextBlock(t, pText, "```java package main")
-
-	pBlock = out.Children[2]
-	checkBlock(t, pBlock, TypeP, 4)
-	pText = pBlock.Children[0]
-	checkTextBlock(t, pText, "func main() { } ")
-	pCode := pBlock.Children[1]
-	checkBlock(t, pCode, TypeCode, 0)
-	pText = pBlock.Children[2]
-	checkTextBlock(t, pText, "")
-	pCode = pBlock.Children[3]
-	checkBlock(t, pCode, TypeCode, 0)
+	checkTextBlock(t, pText, "package main\n\nfunc main() {\n}\n")
 }
 
 func Test_6(t *testing.T) {

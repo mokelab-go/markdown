@@ -49,7 +49,7 @@ const (
 	textInlineCode
 )
 
-func Parse(src string) (*Block, error) {
+func Parse_(src string) (*Block, error) {
 	var textValue []byte
 	var attrKey []byte
 	var attrValue []byte
@@ -473,4 +473,8 @@ func (s *blockStack) Pop() *Block {
 
 func (s *blockStack) Top() *Block {
 	return s.values[len(s.values)-1]
+}
+
+func (s *blockStack) Clear() {
+	s.values = make([]*Block, 0)
 }
