@@ -1,21 +1,24 @@
 package ast
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
-const src_1 = `
+const src1 = `
 # Hello
 
 World![image](./a.webp width=100 height=200)
 `
 
-const src_2 = `
+const src2 = `
 # Hello
 
 ## World
 
 `
 
-const src_3 = `
+const src3 = `
 Hey
 
  * a
@@ -32,14 +35,14 @@ const src4 = "Hey\n\n" +
 	"```\n\n" +
 	"text node"
 
-const src_5 = "Hey\n\n" +
+const src5 = "Hey\n\n" +
 	"```java\n" +
 	"package main\n\n" +
 	"func main() {\n" +
 	"}\n" +
 	"```\n"
 
-const src_6 = "Hey\n\n" +
+const src6 = "Hey\n\n" +
 	"```\n" +
 	"package main\n\n" +
 	"func main() {\n" +
@@ -51,6 +54,49 @@ const src_6 = "Hey\n\n" +
 const src7 = "# Program\n" +
 	"\n" +
 	"This is `code` block\n"
+
+const src8 = `# Title
+
+TOC
+
+ * Item1
+ * Item2
+ * Item3
+
+Welcome!`
+
+const src9 = `# Non-closed code block
+
+` + "```" + `
+package main
+
+// not closed
+`
+
+const src10 = `# backquote in code block
+
+` + "```" + `
+package main
+// backquote in code block
+` + "``" + `
+
+` + "```" + `
+
+OK?
+`
+
+const src11 = `# NoNewLine after li
+
+ - Hello
+ - World
+Plain text
+`
+
+const src12 = `# <h1> "tag"
+
+` + "```" + `
+<LinearLayout android:id="@+id/abc"/>
+` + "```"
 
 func Test_Stack(t *testing.T) {
 	stack := &blockStack{values: make([]*Block, 0)}
@@ -67,7 +113,7 @@ func Test_Stack(t *testing.T) {
 }
 
 func Test_1(t *testing.T) {
-	out, err := Parse(src_1)
+	out, err := Parse(src1)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
@@ -121,7 +167,7 @@ func Test_1(t *testing.T) {
 }
 
 func Test_2(t *testing.T) {
-	out, err := Parse(src_2)
+	out, err := Parse(src2)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
@@ -147,7 +193,7 @@ func Test_2(t *testing.T) {
 }
 
 func Test_3(t *testing.T) {
-	out, err := Parse(src_3)
+	out, err := Parse(src3)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
@@ -225,7 +271,7 @@ func Test_4(t *testing.T) {
 
 func Test_5(t *testing.T) {
 	// language is not supported..
-	out, err := Parse(src_5)
+	out, err := Parse(src5)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
@@ -233,14 +279,9 @@ func Test_5(t *testing.T) {
 	// root
 	//    |- p
 	//    |  |- text
-	//    |- p
-	//    |  |- text
-	//    |- p
+	//    |- pre
 	//       |- text
-	//       |- code(empty)
-	//       |- text(empty)
-	//       |- code(empty)
-	checkBlock(t, out, TypeRoot, 3)
+	checkBlock(t, out, TypeRoot, 2)
 
 	pBlock := out.Children[0]
 	checkBlock(t, pBlock, TypeP, 1)
@@ -249,24 +290,13 @@ func Test_5(t *testing.T) {
 	checkTextBlock(t, pText, "Hey")
 
 	pBlock = out.Children[1]
-	checkBlock(t, pBlock, TypeP, 1)
+	checkBlock(t, pBlock, TypePreCode, 1)
 	pText = pBlock.Children[0]
-	checkTextBlock(t, pText, "```java package main")
-
-	pBlock = out.Children[2]
-	checkBlock(t, pBlock, TypeP, 4)
-	pText = pBlock.Children[0]
-	checkTextBlock(t, pText, "func main() { } ")
-	pCode := pBlock.Children[1]
-	checkBlock(t, pCode, TypeCode, 0)
-	pText = pBlock.Children[2]
-	checkTextBlock(t, pText, "")
-	pCode = pBlock.Children[3]
-	checkBlock(t, pCode, TypeCode, 0)
+	checkTextBlock(t, pText, "package main\n\nfunc main() {\n}\n")
 }
 
 func Test_6(t *testing.T) {
-	out, err := Parse(src_6)
+	out, err := Parse(src6)
 	if err != nil {
 		t.Errorf("Parse error : %s", err)
 		return
@@ -317,4 +347,177 @@ func Test_7(t *testing.T) {
 
 	pText = pBlock.Children[2]
 	checkTextBlock(t, pText, " block")
+}
+func Test_8(t *testing.T) {
+	out, err := Parse(src8)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- p
+	//    |  |- text
+	//    |- ul
+	//    |  |- li
+	//    |  |- li
+	//    |  |- li
+	//    |- p
+	//       |- text
+	checkBlock(t, out, TypeRoot, 4)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "Title")
+
+	pBlock := out.Children[1]
+	checkBlock(t, pBlock, TypeP, 1)
+	pText := pBlock.Children[0]
+	checkTextBlock(t, pText, "TOC")
+
+	ulBlock := out.Children[2]
+	checkBlock(t, ulBlock, TypeUL, 3)
+
+	pBlock = out.Children[3]
+	checkBlock(t, pBlock, TypeP, 1)
+
+	pText = pBlock.Children[0]
+	checkTextBlock(t, pText, "Welcome")
+}
+
+func Test_9(t *testing.T) {
+	out, err := Parse(src9)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- preCode
+	//    |  |- text
+	checkBlock(t, out, TypeRoot, 2)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "Non-closed code block")
+
+	preCodeBlock := out.Children[1]
+	checkBlock(t, preCodeBlock, TypePreCode, 1)
+}
+
+func Test_10(t *testing.T) {
+	out, err := Parse(src10)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- preCode
+	//    |  |- text
+	//    |- p
+	//       |- text
+	checkBlock(t, out, TypeRoot, 3)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "backquote in code block")
+
+	preCodeBlock := out.Children[1]
+	checkBlock(t, preCodeBlock, TypePreCode, 1)
+
+	pBlock := out.Children[2]
+	checkBlock(t, pBlock, TypeP, 1)
+}
+
+func Test_11(t *testing.T) {
+	out, err := Parse(src11)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- preCode
+	//    |  |- text
+	//    |- p
+	//       |- text
+	checkBlock(t, out, TypeRoot, 3)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "NoNewLine after li")
+
+	ulCodeBlock := out.Children[1]
+	checkBlock(t, ulCodeBlock, TypeUL, 2)
+
+	pBlock := out.Children[2]
+	checkBlock(t, pBlock, TypeP, 1)
+	pText := pBlock.Children[0]
+	checkTextBlock(t, pText, "Plain text")
+}
+
+func Test_12(t *testing.T) {
+	out, err := Parse(src12)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- PreCode
+	//        |- text
+	checkBlock(t, out, TypeRoot, 2)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "&lt;h1&gt; &quot;tag&quot;")
+
+	preBlock := out.Children[1]
+	checkBlock(t, preBlock, TypePreCode, 1)
+	preText := preBlock.Children[0]
+	checkTextBlock(t, preText, "&lt;LinearLayout android:id=&quot;@+id/abc&quot;/&gt;\n")
+}
+
+func printTypes(b *Block, indent string) string {
+	toTypeStr := func(t BlockType) string {
+		switch t {
+		case TypeText:
+			return "Text"
+		case TypeH1:
+			return "H1"
+		case TypeH2:
+			return "H2"
+		case TypeLI:
+			return "LI"
+		case TypeUL:
+			return "UL"
+		case TypeP:
+			return "P"
+		case TypePreCode:
+			return "Pre/Code"
+		default:
+			return "???"
+		}
+	}
+	out := fmt.Sprintf("%sType %s\n", indent, toTypeStr(b.Type))
+	for _, c := range b.Children {
+		out += fmt.Sprintf("%s  %s", indent, printTypes(c, "  "+indent))
+	}
+	return out
 }
