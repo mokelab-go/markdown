@@ -32,3 +32,33 @@ func newBlock(t BlockType) *Block {
 		Attributes: make(map[string]string),
 	}
 }
+
+type blockStack struct {
+	values []*Block
+}
+
+func (s *blockStack) Push(v *Block) {
+	s.values = append(s.values, v)
+}
+
+func (s *blockStack) Pop() *Block {
+	top := s.values[len(s.values)-1]
+	s.values = s.values[:len(s.values)-1]
+	return top
+}
+
+func (s *blockStack) Top() *Block {
+	return s.values[len(s.values)-1]
+}
+
+func (s *blockStack) Clear() {
+	s.values = make([]*Block, 0)
+}
+
+func appendChild(b *Block, c *Block) {
+	b.Children = append(b.Children, c)
+}
+
+func appendStr(out []byte, text string) []byte {
+	return append(out, text...)
+}
