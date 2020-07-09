@@ -92,7 +92,11 @@ const src11 = `# NoNewLine after li
 Plain text
 `
 
-const src12 = `# <h1> "tag"`
+const src12 = `# <h1> "tag"
+
+` + "```" + `
+<LinearLayout android:id="@+id/abc"/>
+` + "```"
 
 func Test_Stack(t *testing.T) {
 	stack := &blockStack{values: make([]*Block, 0)}
@@ -474,13 +478,20 @@ func Test_12(t *testing.T) {
 	// root
 	//    |- h1
 	//    |   |- text
-	checkBlock(t, out, TypeRoot, 1)
+	//    |- PreCode
+	//        |- text
+	checkBlock(t, out, TypeRoot, 2)
 
 	h1Block := out.Children[0]
 	checkBlock(t, h1Block, TypeH1, 1)
 
 	h1Text := h1Block.Children[0]
 	checkTextBlock(t, h1Text, "&lt;h1&gt; &quot;tag&quot;")
+
+	preBlock := out.Children[1]
+	checkBlock(t, preBlock, TypePreCode, 1)
+	preText := preBlock.Children[0]
+	checkTextBlock(t, preText, "&lt;LinearLayout android:id=&quot;@+id/abc&quot;/&gt;\n")
 }
 
 func printTypes(b *Block, indent string) string {

@@ -554,6 +554,27 @@ func stateReadPreCodeText(s *parseState, char byte) (stateFunc, error) {
 		s.index++
 		return stateReadEndPreCode, nil
 	}
+	// escape
+	if char == '<' {
+		s.textValue = appendStr(s.textValue, "&lt;")
+		s.index++
+		return stateReadPreCodeText, nil
+	}
+	if char == '>' {
+		s.textValue = appendStr(s.textValue, "&gt;")
+		s.index++
+		return stateReadPreCodeText, nil
+	}
+	if char == '&' {
+		s.textValue = appendStr(s.textValue, "&amp;")
+		s.index++
+		return stateReadPreCodeText, nil
+	}
+	if char == '"' {
+		s.textValue = appendStr(s.textValue, "&quot;")
+		s.index++
+		return stateReadPreCodeText, nil
+	}
 	s.textValue = append(s.textValue, char)
 	s.index++
 	return stateReadPreCodeText, nil
