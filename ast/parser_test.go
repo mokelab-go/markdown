@@ -98,6 +98,10 @@ const src12 = `# <h1> "tag"
 <LinearLayout android:id="@+id/abc"/>
 ` + "```"
 
+const src13 = `# inline code block
+
+` + "`" + `fmt.Printf()` + "`" + ` prints code`
+
 func Test_Stack(t *testing.T) {
 	stack := &blockStack{values: make([]*Block, 0)}
 	stack.Push(newBlock(TypeRoot))
@@ -492,6 +496,34 @@ func Test_12(t *testing.T) {
 	checkBlock(t, preBlock, TypePreCode, 1)
 	preText := preBlock.Children[0]
 	checkTextBlock(t, preText, "&lt;LinearLayout android:id=&quot;@+id/abc&quot;/&gt;\n")
+}
+
+func Test_13(t *testing.T) {
+	out, err := Parse(src13)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//    |   |- text
+	//    |- p
+	//       |- code
+	//       |- text
+	checkBlock(t, out, TypeRoot, 2)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 1)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "inline code block")
+
+	pBlock := out.Children[1]
+	checkBlock(t, pBlock, TypeP, 2)
+	codeBlock := pBlock.Children[0]
+	checkInlineCodeBlock(t, codeBlock, "fmt.Printf()")
+	textBlock := pBlock.Children[1]
+	checkTextBlock(t, textBlock, " prints code")
 }
 
 func printTypes(b *Block, indent string) string {
