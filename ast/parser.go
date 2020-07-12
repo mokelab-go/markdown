@@ -521,8 +521,18 @@ func stateReadBeginPreCode(s *parseState, char byte) (stateFunc, error) {
 		return stateReadBeginPreCodeNewLine, nil
 	}
 	if s.hCount == 1 {
-		s.index++
-		return stateReadText, nil
+		// p with code
+		pBlock := newBlock(TypeP)
+		codeBlock := newBlock(TypeCode)
+		appendChild(s.currentBlock, pBlock)
+		appendChild(pBlock, codeBlock)
+		s.blockStack.Push(s.currentBlock)
+		s.blockStack.Push(pBlock)
+
+		s.currentBlock = codeBlock
+		s.textValue = make([]byte, 0)
+		// read this char as a part of text
+		return stateReadInlineCode, nil
 	}
 	s.textValue = make([]byte, 0)
 	return stateReadText, nil
