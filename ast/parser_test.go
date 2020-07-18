@@ -102,6 +102,8 @@ const src13 = `# inline code block
 
 ` + "`" + `fmt.Printf()` + "`" + ` prints code`
 
+const src14 = `# [Detail](./detail.html)`
+
 func Test_Stack(t *testing.T) {
 	stack := &blockStack{values: make([]*Block, 0)}
 	stack.Push(newBlock(TypeRoot))
@@ -524,6 +526,32 @@ func Test_13(t *testing.T) {
 	checkInlineCodeBlock(t, codeBlock, "fmt.Printf()")
 	textBlock := pBlock.Children[1]
 	checkTextBlock(t, textBlock, " prints code")
+}
+
+func Test_14(t *testing.T) {
+	out, err := Parse(src14)
+	if err != nil {
+		t.Errorf("Parse error : %s", err)
+		return
+	}
+	// root
+	//    |- h1
+	//       |- text(empty)
+	//       |- Anchor
+	//       |- text(empty)
+	checkBlock(t, out, TypeRoot, 1)
+
+	h1Block := out.Children[0]
+	checkBlock(t, h1Block, TypeH1, 3)
+
+	h1Text := h1Block.Children[0]
+	checkTextBlock(t, h1Text, "")
+
+	h1Anchor := h1Block.Children[1]
+	checkAnchorBlock(t, h1Anchor, "Detail", "./detail.html")
+
+	h1Text = h1Block.Children[2]
+	checkTextBlock(t, h1Text, "")
 }
 
 func printTypes(b *Block, indent string) string {
